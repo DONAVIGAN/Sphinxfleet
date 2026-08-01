@@ -26,16 +26,37 @@
 --   l'endpoint Vercel par un tiers, pas contre quelqu'un qui a déjà la main sur
 --   la base. En cas de rotation : régénérer côté Vercel PUIS rejouer ce script.
 --
--- Prérequis : extension `pg_net` activée (Database > Extensions). Les projets
--- Supabase récents l'ont par défaut ; le bloc ci-dessous échoue explicitement
--- si le schéma `supabase_functions` est absent.
+-- ⚠️ PRÉREQUIS — une action manuelle unique dans l'UI est indispensable
+--   Le schéma `supabase_functions` (qui porte la fonction `http_request` et la
+--   table d'audit `hooks`) est créé par l'**intégration Database Webhooks**, pas
+--   par l'extension `pg_net` seule. Tant que l'intégration n'a jamais été activée
+--   sur le projet, ce script échoue avec le message ci-dessous.
+--
+--   À faire une seule fois : Dashboard > Integrations > Database Webhooks > Enable.
+--   Inutile de créer un hook via le formulaire : l'activation suffit à provisionner
+--   le schéma, ce trigger prend ensuite le relais.
+--
+--   `pg_net` reste nécessaire par-dessous (c'est lui qui émet réellement la
+--   requête HTTP), mais il est activé par défaut sur les projets Supabase récents
+--   et l'intégration s'en occupe.
 -- ============================================================
 
 do $$
 begin
   if not exists (select 1 from pg_namespace where nspname = 'supabase_functions') then
     raise exception
-      'Schéma supabase_functions absent : activer l''extension pg_net (Database > Extensions) avant de rejouer cette migration.';
+      'Schéma supabase_functions absent : activer une fois l''intégration Database Webhooks (Dashboard > Integrations > Database Webhooks > Enable), puis rejouer cette migration.';
+  end if;
+
+  -- Le schéma peut exister sans la fonction attendue (cas signalé sur d'anciens
+  -- projets et en local CLI) : autant le détecter ici que sur un échec de create trigger.
+  if not exists (
+    select 1 from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'supabase_functions' and p.proname = 'http_request'
+  ) then
+    raise exception
+      'supabase_functions.http_request introuvable : réactiver l''intégration Database Webhooks depuis le dashboard.';
   end if;
 end $$;
 
