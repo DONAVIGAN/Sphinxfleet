@@ -46,6 +46,13 @@ export default async function handler(req, res) {
     return res.status(401).json({ erreur: 'Secret invalide' })
   }
 
+  // Même logique de garde que pour le secret : une variable manquante doit produire
+  // une erreur explicite, pas un 500 opaque au fond du SDK Supabase.
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY non configuré')
+    return res.status(503).json({ erreur: 'Accès base de données non configuré' })
+  }
+
   const supabaseAdmin = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
