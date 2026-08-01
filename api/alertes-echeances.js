@@ -32,7 +32,17 @@ const LIBELLES_DOCUMENT = {
 export default async function handler(req, res) {
   // Vercel Cron ajoute automatiquement ce header "Authorization: Bearer <CRON_SECRET>"
   // dès que la variable d'environnement CRON_SECRET est définie dans le projet Vercel.
-  if (req.headers['authorization'] !== `Bearer ${process.env.CRON_SECRET}`) {
+  //
+  // Le garde `!cronSecret` est indispensable : sans lui, une variable absente
+  // produit la chaîne "Bearer undefined", qu'un appelant peut envoyer tel quel
+  // pour franchir le contrôle (auth fail-open).
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret) {
+    console.error('CRON_SECRET non configuré : exécution du cron refusée')
+    return res.status(503).json({ erreur: 'Cron non configuré' })
+  }
+
+  if (req.headers['authorization'] !== `Bearer ${cronSecret}`) {
     return res.status(401).json({ erreur: 'Secret invalide' })
   }
 

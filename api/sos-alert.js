@@ -16,8 +16,17 @@ export default async function handler(req, res) {
     return res.status(405).json({ erreur: 'Méthode non autorisée' })
   }
 
+  // Refus immédiat si le secret n'est pas configuré côté serveur : sans ce garde,
+  // une variable d'env absente rendrait la comparaison `undefined !== undefined`
+  // fausse, et n'importe quel appel sans header franchirait l'authentification.
+  const secretAttendu = process.env.SOS_WEBHOOK_SECRET
+  if (!secretAttendu) {
+    console.error('SOS_WEBHOOK_SECRET non configuré : webhook refusé')
+    return res.status(503).json({ erreur: 'Webhook non configuré' })
+  }
+
   // Vérification du secret partagé pour s'assurer que l'appel vient bien de Supabase
-  if (req.headers['x-webhook-secret'] !== process.env.SOS_WEBHOOK_SECRET) {
+  if (req.headers['x-webhook-secret'] !== secretAttendu) {
     return res.status(401).json({ erreur: 'Secret invalide' })
   }
 
