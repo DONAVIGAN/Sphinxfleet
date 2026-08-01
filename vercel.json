@@ -1,0 +1,11 @@
+{
+  "crons": [
+    {
+      "path": "/api/alertes-echeances",
+      "schedule": "0 8 * * *"
+    }
+  ],
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}

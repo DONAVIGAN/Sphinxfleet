@@ -1,0 +1,27 @@
+# Dépendances
+node_modules/
+
+# Secrets — ne JAMAIS committer (clés Supabase, webhooks)
+.env
+.env.*
+!.env.example
+
+# Artefacts de build (régénérés par `npm run build`)
+dist/
+dev-dist/
+
+# Vercel
+.vercel
+
+# Sauvegardes locales d'éditeur
+*.save
+*~
+
+# Traces Windows / WSL
+*:Zone.Identifier
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
