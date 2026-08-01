@@ -55,6 +55,16 @@ export default async function handler(req, res) {
       .eq('id', alerte.vehicule_id)
       .single()
 
+    // Sans véhicule, impossible de déterminer les destinataires : on refuse
+    // explicitement plutôt que de crasher sur `vehicule.organisation_id`.
+    // Cas réel : véhicule supprimé entre l'insertion de l'alerte et le webhook.
+    if (!vehicule) {
+      console.error(`Alerte SOS ${alerte.id} : véhicule ${alerte.vehicule_id} introuvable`)
+      return res.status(422).json({ erreur: 'Véhicule introuvable pour cette alerte' })
+    }
+
+    // Le chauffeur reste optionnel : son absence ne doit pas bloquer l'alerte,
+    // la position et le véhicule suffisent à déclencher les secours.
     const { data: chauffeur } = await supabaseAdmin
       .from('chauffeurs')
       .select('nom, telephone')
